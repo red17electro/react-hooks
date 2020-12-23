@@ -4,69 +4,17 @@
 import * as React from 'react'
 import {useLocalStorageState} from '../utils'
 
-function Board() {
-  const [history, setHistory] = useLocalStorageState(
-    'tic-tac-toe-history',
-    () => Array(9).fill([]),
-  )
-  const [currentStep, setCurrentStep] = useLocalStorageState(
-    'tic-tac-toe-step',
-    0,
-  )
-  const nextValue = calculateNextValue(history[currentStep])
-  const winner = calculateWinner(history[currentStep])
-  const status = calculateStatus(winner, history[currentStep], nextValue)
-
-  function selectSquare(square) {
-    if (winner || history[currentStep][square]) {
-      return
-    }
-
-    const squaresCopy = [...history[currentStep]]
-    squaresCopy[square] = nextValue
-    const historyCopy = [...history]
-    historyCopy[currentStep + 1] = squaresCopy
-    setHistory(historyCopy)
-    setCurrentStep(currentStep + 1)
-  }
-
-  function restart() {
-    setCurrentStep(0)
-    setHistory(Array(9).fill([]))
-  }
-
-  function goToHistory(step) {
-    setCurrentStep(step)
-    // setHistory([...history].slice(0, currentStep))
-  }
-
+function Board({onClick, squares}) {
   function renderSquare(i) {
     return (
-      <button className="square" onClick={() => selectSquare(i)}>
-        {history[currentStep][i]}
+      <button className="square" onClick={() => onClick(i)}>
+        {squares[i]}
       </button>
     )
   }
 
   return (
     <div>
-      <div className="status">{status}</div>
-      {
-        <ul>
-          {history
-            .filter((array, index) => array.length > 0 || index === 0)
-            .map((el, index) => (
-              <li key={index}>
-                <button
-                  disabled={currentStep === index}
-                  onClick={() => goToHistory(index)}
-                >
-                  Go to {index}
-                </button>
-              </li>
-            ))}
-        </ul>
-      }
       <div className="board-row">
         {renderSquare(0)}
         {renderSquare(1)}
@@ -82,18 +30,73 @@ function Board() {
         {renderSquare(7)}
         {renderSquare(8)}
       </div>
-      <button className="restart" onClick={restart}>
-        restart
-      </button>
     </div>
   )
 }
 
 function Game() {
+  const [history, setHistory] = useLocalStorageState(
+    'tic-tac-toe-history',
+    () => Array(9).fill([]),
+  )
+  const [currentStep, setCurrentStep] = useLocalStorageState(
+    'tic-tac-toe-step',
+    0,
+  )
+
+  const nextValue = calculateNextValue(history[currentStep])
+  const winner = calculateWinner(history[currentStep])
+  const status = calculateStatus(winner, history[currentStep], nextValue)
+
+  function restart() {
+    setCurrentStep(0)
+    setHistory(Array(9).fill([]))
+  }
+
+  function selectSquare(square) {
+    if (winner || history[currentStep][square]) {
+      return
+    }
+
+    const squaresCopy = [...history[currentStep]]
+    squaresCopy[square] = nextValue
+    // my version
+    // const historyCopy = [...history]
+    // historyCopy[currentStep + 1] = squaresCopy
+    // setHistory(historyCopy)
+    // setCurrentStep(currentStep + 1)
+    debugger
+    const newHistory = history.slice(0, currentStep + 1)
+    setHistory([...newHistory, squaresCopy])
+    setCurrentStep(newHistory.length)
+  }
+
   return (
     <div className="game">
       <div className="game-board">
-        <Board />
+        {
+          <ul>
+            {history
+              .filter((array, index) => array.length > 0 || index === 0)
+              .map((el, index) => (
+                <li key={index}>
+                  <button
+                    disabled={currentStep === index}
+                    onClick={() => setCurrentStep(index)}
+                  >
+                    Go to {index}
+                  </button>
+                </li>
+              ))}
+          </ul>
+        }
+        <Board onClick={selectSquare} squares={history[currentStep]} />
+        <button className="restart" onClick={restart}>
+          restart
+        </button>
+      </div>
+      <div className="game-info">
+        <div>{status}</div>
       </div>
     </div>
   )
