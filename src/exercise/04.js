@@ -5,31 +5,45 @@ import * as React from 'react'
 import {useLocalStorageState} from '../utils'
 
 function Board() {
-  const [squares, setSquares] = useLocalStorageState('tic-tac-toe', () =>
-    Array(9).fill(null),
+  const [history, setHistory] = useLocalStorageState(
+    'tic-tac-toe-history',
+    () => Array(9).fill([]),
   )
-  const nextValue = calculateNextValue(squares)
-  const winner = calculateWinner(squares)
-  const status = calculateStatus(winner, squares, nextValue)
+  const [currentStep, setCurrentStep] = useLocalStorageState(
+    'tic-tac-toe-step',
+    0,
+  )
+  const nextValue = calculateNextValue(history[currentStep])
+  const winner = calculateWinner(history[currentStep])
+  const status = calculateStatus(winner, history[currentStep], nextValue)
 
   function selectSquare(square) {
-    if (winner || squares[square]) {
+    if (winner || history[currentStep][square]) {
       return
     }
 
-    const squaresCopy = [...squares]
+    const squaresCopy = [...history[currentStep]]
     squaresCopy[square] = nextValue
-    setSquares(squaresCopy)
+    const historyCopy = [...history]
+    historyCopy[currentStep + 1] = squaresCopy
+    setHistory(historyCopy)
+    setCurrentStep(currentStep + 1)
   }
 
   function restart() {
-    setSquares(Array(9).fill(null))
+    setCurrentStep(0)
+    setHistory(Array(9).fill([]))
+  }
+
+  function goToHistory(step) {
+    setCurrentStep(step)
+    // setHistory([...history].slice(0, currentStep))
   }
 
   function renderSquare(i) {
     return (
       <button className="square" onClick={() => selectSquare(i)}>
-        {squares[i]}
+        {history[currentStep][i]}
       </button>
     )
   }
@@ -37,6 +51,22 @@ function Board() {
   return (
     <div>
       <div className="status">{status}</div>
+      {
+        <ul>
+          {history
+            .filter((array, index) => array.length > 0 || index === 0)
+            .map((el, index) => (
+              <li key={index}>
+                <button
+                  disabled={currentStep === index}
+                  onClick={() => goToHistory(index)}
+                >
+                  Go to {index}
+                </button>
+              </li>
+            ))}
+        </ul>
+      }
       <div className="board-row">
         {renderSquare(0)}
         {renderSquare(1)}
@@ -80,6 +110,7 @@ function calculateStatus(winner, squares, nextValue) {
 
 // eslint-disable-next-line no-unused-vars
 function calculateNextValue(squares) {
+  debugger
   const xSquaresCount = squares.filter(r => r === 'X').length
   const oSquaresCount = squares.filter(r => r === 'O').length
   return oSquaresCount === xSquaresCount ? 'X' : 'O'
